@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from app.core.config import settings
-from app.schemas.system import DemoModeRequest
+from app.schemas.system import DemoModeRequest, RelayOverrideRequest
 from app.services.relay_service import relay_service
 from app.services.table_service import table_service
 
@@ -43,3 +43,13 @@ def set_demo_mode(payload: DemoModeRequest) -> dict:
         return {"enabled": relay_service.demo_mode}
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/relay/{ch}/override")
+def relay_override(ch: int, payload: RelayOverrideRequest) -> dict:
+    """Manually force a relay on or off, bypassing table-state logic."""
+    if payload.state == "on":
+        ok = relay_service.turn_on(ch)
+    else:
+        ok = relay_service.turn_off(ch)
+    return {"ch": ch, "state": payload.state, "success": ok}

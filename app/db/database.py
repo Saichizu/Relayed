@@ -47,7 +47,8 @@ def init_main_db() -> None:
                     ends_at     INTEGER NOT NULL DEFAULT 0,
                     rate        REAL    NOT NULL DEFAULT 0,
                     paused_at   INTEGER NOT NULL DEFAULT 0,
-                    paused_secs INTEGER NOT NULL DEFAULT 0
+                    paused_secs INTEGER NOT NULL DEFAULT 0,
+                    started_by  TEXT    NOT NULL DEFAULT ''
                 );
 
                 CREATE TABLE IF NOT EXISTS history (
@@ -60,6 +61,7 @@ def init_main_db() -> None:
                     duration_s  INTEGER NOT NULL DEFAULT 0,
                     total_cost  REAL    NOT NULL DEFAULT 0,
                     actor       TEXT    NOT NULL DEFAULT '',
+                    started_by  TEXT    NOT NULL DEFAULT '',
                     created_at  INTEGER NOT NULL
                 );
 
@@ -79,6 +81,15 @@ def init_main_db() -> None:
                 );
                 """
             )
+            # Add new columns to existing databases (idempotent migrations)
+            for sql in (
+                "ALTER TABLE tables ADD COLUMN started_by TEXT NOT NULL DEFAULT ''",
+                "ALTER TABLE history ADD COLUMN started_by TEXT NOT NULL DEFAULT ''",
+            ):
+                try:
+                    conn.execute(sql)
+                except Exception:
+                    pass  # Column already exists
             conn.commit()
         finally:
             conn.close()

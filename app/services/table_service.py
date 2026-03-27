@@ -109,10 +109,11 @@ class TableService:
                         """
                         UPDATE tables
                         SET status=?, mode=?, customer=?, started_at=?,
-                            ends_at=?, rate=0, paused_at=0, paused_secs=0
+                            ends_at=?, rate=0, paused_at=0, paused_secs=0,
+                            started_by=?
                         WHERE ch=?
                         """,
-                        (STATUS_ACTIVE, MODE_TIMED, customer, now, ends_at, ch),
+                        (STATUS_ACTIVE, MODE_TIMED, customer, now, ends_at, actor, ch),
                     )
                     conn.commit()
                 finally:
@@ -145,10 +146,11 @@ class TableService:
                         """
                         UPDATE tables
                         SET status=?, mode=?, customer=?, started_at=?,
-                            ends_at=0, rate=?, paused_at=0, paused_secs=0
+                            ends_at=0, rate=?, paused_at=0, paused_secs=0,
+                            started_by=?
                         WHERE ch=?
                         """,
-                        (STATUS_OPEN, MODE_OPEN, customer, now, rate, ch),
+                        (STATUS_OPEN, MODE_OPEN, customer, now, rate, actor, ch),
                     )
                     conn.commit()
                 finally:
@@ -197,6 +199,7 @@ class TableService:
                     mode = row["mode"]
                     customer = row["customer"]
                     rate = row["rate"] or 0.0
+                    started_by = row.get("started_by") or ""
 
                     if mode == MODE_TIMED:
                         ends_at = row["ends_at"]
@@ -211,11 +214,11 @@ class TableService:
                         """
                         INSERT INTO history
                             (ch, customer, mode, started_at, ended_at,
-                             duration_s, total_cost, actor, created_at)
-                        VALUES (?,?,?,?,?,?,?,?,?)
+                             duration_s, total_cost, actor, started_by, created_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?)
                         """,
                         (ch, customer, mode, started_at, now,
-                         duration_s, total_cost, actor, now),
+                         duration_s, total_cost, actor, started_by, now),
                     )
 
                     conn.execute(
@@ -223,7 +226,7 @@ class TableService:
                         UPDATE tables
                         SET status='idle', mode='timed', customer='',
                             started_at=0, ends_at=0, rate=0,
-                            paused_at=0, paused_secs=0
+                            paused_at=0, paused_secs=0, started_by=''
                         WHERE ch=?
                         """,
                         (ch,),
